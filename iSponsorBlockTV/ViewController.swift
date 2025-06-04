@@ -102,7 +102,7 @@ class ViewController: UIViewController {
         let sponsorBlockStack = createSettingRow(
             title: "Блокировка спонсоров",
             subtitle: "Автоматически пропускать спонсорские сегменты",
-            switch: sponsorBlockEnabledSwitch
+            switchControl: sponsorBlockEnabledSwitch
         )
         contentView.addSubview(sponsorBlockStack)
         
@@ -110,7 +110,7 @@ class ViewController: UIViewController {
         let adBlockStack = createSettingRow(
             title: "Блокировка рекламы",
             subtitle: "Пропускать рекламные ролики YouTube",
-            switch: adBlockEnabledSwitch
+            switchControl: adBlockEnabledSwitch
         )
         contentView.addSubview(adBlockStack)
         
@@ -118,7 +118,7 @@ class ViewController: UIViewController {
         let autoSkipStack = createSettingRow(
             title: "Автопропуск",
             subtitle: "Автоматически пропускать без подтверждения",
-            switch: autoSkipSwitch
+            switchControl: autoSkipSwitch
         )
         contentView.addSubview(autoSkipStack)
         
@@ -146,7 +146,7 @@ class ViewController: UIViewController {
         updateDevicesList()
     }
     
-    private func createSettingRow(title: String, subtitle: String, switch: UISwitch) -> UIStackView {
+    private func createSettingRow(title: String, subtitle: String, switchControl: UISwitch) -> UIStackView {
         let mainStack = UIStackView()
         mainStack.axis = .horizontal
         mainStack.alignment = .center
@@ -170,10 +170,10 @@ class ViewController: UIViewController {
         labelsStack.addArrangedSubview(titleLabel)
         labelsStack.addArrangedSubview(subtitleLabel)
         
-        switch.translatesAutoresizingMaskIntoConstraints = false
+        switchControl.translatesAutoresizingMaskIntoConstraints = false
         
         mainStack.addArrangedSubview(labelsStack)
-        mainStack.addArrangedSubview(switch)
+        mainStack.addArrangedSubview(switchControl)
         
         return mainStack
     }
