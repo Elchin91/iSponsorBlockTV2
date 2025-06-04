@@ -56,6 +56,23 @@ jobs:
             ./create_entitlements.sh
           fi
           
+      - name: Debug project settings
+        run: |
+          if [ -d "./iSponsorBlockTV.xcodeproj" ]; then
+            PROJECT_PATH="./iSponsorBlockTV.xcodeproj"
+          elif [ -d "./iSponsorBlockTV/iSponsorBlockTV.xcodeproj" ]; then
+            PROJECT_PATH="./iSponsorBlockTV/iSponsorBlockTV.xcodeproj"
+          else
+            echo "❌ Проект не найден"
+            exit 1
+          fi
+          
+          echo "🔍 Диагностика настроек проекта:"
+          echo "PROJECT_PATH: $PROJECT_PATH"
+          
+          # Показываем настройки сборки
+          xcodebuild -project "$PROJECT_PATH" -scheme "iSponsorBlockTV" -configuration Release -showBuildSettings | grep -E "(SWIFT_|OPTIMIZATION|COMPILATION)" || echo "Настройки не найдены"
+          
       - name: Build TrollStore IPA
         run: |
           # Определяем путь к проекту
@@ -100,6 +117,9 @@ jobs:
             ARCHS="arm64" \
             ONLY_ACTIVE_ARCH=NO \
             ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES=YES \
+            SWIFT_COMPILATION_MODE="wholemodule" \
+            SWIFT_OPTIMIZATION_LEVEL="-O" \
+            ENABLE_PREVIEWS=NO \
             | tee build.log
             
           # Проверяем результат сборки
