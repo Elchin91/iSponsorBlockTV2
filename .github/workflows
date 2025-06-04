@@ -1,0 +1,148 @@
+name: Build TrollStore IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        
+      - name: Explore repository structure
+        run: |
+          echo "Current directory:"
+          pwd
+          echo "\nRoot directory contents:"
+          ls -la
+          echo "\nSearch for Xcode project files (deep):"
+          find . -name "*.xcodeproj" | sort
+          echo "\nSearch for Xcode workspace files (deep):"
+          find . -name "*.xcworkspace" | sort
+          echo "\nDirectory structure (2 levels):"
+          find . -type d -maxdepth 2 | sort
+          echo "\nCheck iSponsorBlockTV directory contents:"
+          ls -la iSponsorBlockTV/ || echo "Directory not found"
+          echo "\nCheck SPM directory contents:"
+          ls -la SponsorBlockKit/SPM/ || echo "Directory not found"
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Create entitlements file
+        run: |
+          cat > iSponsorBlockTV/TrollStore.entitlements << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>platform-application</key>
+              <true/>
+              <key>com.apple.private.security.no-container</key>
+              <true/>
+              <key>com.apple.security.app-sandbox</key>
+              <false/>
+              <key>com.apple.security.get-task-allow</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
+          
+      - name: Try building with found Xcode project
+        run: |
+          # Try different potential project paths
+          if [ -d "./iSponsorBlockTV.xcodeproj" ]; then
+            PROJECT_PATH="./iSponsorBlockTV.xcodeproj"
+            SCHEME_NAME="iSponsorBlockTV"
+          elif [ -d "./iSponsorBlock.xcodeproj" ]; then
+            PROJECT_PATH="./iSponsorBlock.xcodeproj"
+            SCHEME_NAME="iSponsorBlockTV"
+          elif [ -d "./SponsorBlockKit/SPM/SponsorBlockKit.xcodeproj" ]; then
+            PROJECT_PATH="./SponsorBlockKit/SPM/SponsorBlockKit.xcodeproj"
+            SCHEME_NAME="SponsorBlockKit"
+          else
+            echo "Cannot find Xcode project. Searching for any .xcodeproj file..."
+            PROJECT_PATH=$(find . -name "*.xcodeproj" | head -1)
+            SCHEME_NAME=$(basename "${PROJECT_PATH}" .xcodeproj)
+          fi
+          
+          if [ -z "$PROJECT_PATH" ]; then
+            echo "No Xcode project found. Checking for workspaces..."
+            WORKSPACE_PATH=$(find . -name "*.xcworkspace" | head -1)
+            if [ -n "$WORKSPACE_PATH" ]; then
+              echo "Found workspace: $WORKSPACE_PATH"
+              xcodebuild -workspace "$WORKSPACE_PATH" -list
+              SCHEME_NAME=$(xcodebuild -workspace "$WORKSPACE_PATH" -list | grep -A 10 "Schemes:" | grep -v "Schemes:" | head -1 | xargs)
+              
+              # Create IPA using workspace instead
+              mkdir -p build
+              xcodebuild clean archive \
+                -workspace "$WORKSPACE_PATH" \
+                -scheme "$SCHEME_NAME" \
+                -configuration Release \
+                -sdk iphoneos \
+                -archivePath build/app.xcarchive \
+                CODE_SIGNING_REQUIRED=NO \
+                CODE_SIGNING_ALLOWED=NO \
+                CODE_SIGN_IDENTITY="" \
+                ENTITLEMENTS_REQUIRED=YES \
+                EXPANDED_CODE_SIGN_IDENTITY="" \
+                SWIFT_OPTIMIZATION_LEVEL="-O" \
+                OTHER_CODE_SIGN_FLAGS="--entitlements iSponsorBlockTV/TrollStore.entitlements"
+            else
+              echo "No Xcode project or workspace found. Cannot proceed."
+              exit 1
+            fi
+          else
+            echo "Found project: $PROJECT_PATH"
+            echo "Using scheme: $SCHEME_NAME"
+            
+            # Show available schemes
+            xcodebuild -project "$PROJECT_PATH" -list || echo "Failed to list project schemes"
+            
+            # Try to build
+            mkdir -p build
+            xcodebuild clean archive \
+              -project "$PROJECT_PATH" \
+              -scheme "$SCHEME_NAME" \
+              -configuration Release \
+              -sdk iphoneos \
+              -archivePath build/app.xcarchive \
+              CODE_SIGNING_REQUIRED=NO \
+              CODE_SIGNING_ALLOWED=NO \
+              CODE_SIGN_IDENTITY="" \
+              ENTITLEMENTS_REQUIRED=YES \
+              EXPANDED_CODE_SIGN_IDENTITY="" \
+              SWIFT_OPTIMIZATION_LEVEL="-O" \
+              OTHER_CODE_SIGN_FLAGS="--entitlements iSponsorBlockTV/TrollStore.entitlements" || echo "Build failed. Will try with other options."
+          fi
+            
+      - name: Create IPA if archive exists
+        if: success() || failure()
+        run: |
+          if [ -d "build/app.xcarchive/Products/Applications" ]; then
+            echo "Archive created successfully. Creating IPA..."
+            mkdir -p Payload
+            cp -r build/app.xcarchive/Products/Applications/*.app Payload/
+            zip -r app-TrollStore.ipa Payload
+            echo "IPA created at: app-TrollStore.ipa"
+            ls -la app-TrollStore.ipa
+          else
+            echo "Archive not created. Cannot proceed with IPA creation."
+            exit 1
+          fi
+
+      - name: Upload IPA as artifact
+        if: success()
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: trollstore-ipa
+          name: TrollStore IPA
+          draft: false
+          prerelease: false
+          files: app-TrollStore.ipa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
