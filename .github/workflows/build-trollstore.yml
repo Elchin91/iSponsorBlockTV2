@@ -123,12 +123,8 @@ jobs:
 
       - name: Upload IPA as artifact
         if: success()
-        uses: softprops/action-gh-release@v1
+        uses: actions/upload-artifact@v3
         with:
-          tag_name: trollstore-ipa-${{ github.run_number }}
-          name: TrollStore IPA Build ${{ github.run_number }}
-          draft: false
-          prerelease: false
-          files: iSponsorBlockTV-TrollStore.ipa
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: iSponsorBlockTV-TrollStore-IPA
+          path: iSponsorBlockTV-TrollStore.ipa
+          retention-days: 30
