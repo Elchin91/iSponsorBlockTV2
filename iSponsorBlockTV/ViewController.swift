@@ -27,7 +27,7 @@ class ViewController: UIViewController {
     // MARK: - Properties
     private var isConnected = false
     private var serverAddress = "http://192.168.1.100:8000"
-    private var connectedDevices: [String] = []
+    private var connectedDevices: [Device] = []
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -289,12 +289,16 @@ class ViewController: UIViewController {
         }
         
         serverAddress = address
+        NetworkManager.shared.setBaseURL(serverAddress)
         
-        // Simulate connection (in real app, make HTTP request to server)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            self.isConnected = true
-            self.updateConnectionStatus()
-            self.simulateDeviceData()
+        NetworkManager.shared.checkConnection { [weak self] success in
+            if success {
+                self?.isConnected = true
+                self?.updateConnectionStatus()
+                self?.loadDevicesAndStats()
+            } else {
+                self?.showAlert(title: "Ошибка", message: "Не удается подключиться к серверу")
+            }
         }
     }
     
@@ -303,6 +307,20 @@ class ViewController: UIViewController {
         updateConnectionStatus()
         connectedDevices.removeAll()
         updateDevicesList()
+    }
+    
+    private func loadDevicesAndStats() {
+        NetworkManager.shared.getConnectedDevices { [weak self] devices in
+            self?.connectedDevices = devices
+            self?.updateDevicesList()
+        }
+        
+        NetworkManager.shared.getStatistics { [weak self] stats in
+            if let stats = stats {
+                self?.skippedCountLabel.text = "Пропущено сегментов: \(stats.segmentsSkipped)"
+                self?.savedTimeLabel.text = "Сэкономлено времени: \(stats.formattedTimeSaved)"
+            }
+        }
     }
     
     private func updateConnectionStatus() {
@@ -319,16 +337,6 @@ class ViewController: UIViewController {
         }
     }
     
-    private func simulateDeviceData() {
-        // Simulate connected devices
-        connectedDevices = ["Apple TV (Гостиная)", "Samsung TV (Спальня)", "Chromecast (Кухня)"]
-        updateDevicesList()
-        
-        // Simulate statistics
-        skippedCountLabel.text = "Пропущено сегментов: 127"
-        savedTimeLabel.text = "Сэкономлено времени: 42 мин"
-    }
-    
     private func updateDevicesList() {
         // Clear existing device views
         devicesStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
@@ -341,13 +349,13 @@ class ViewController: UIViewController {
             devicesStackView.addArrangedSubview(noDevicesLabel)
         } else {
             for device in connectedDevices {
-                let deviceView = createDeviceView(name: device)
+                let deviceView = createDeviceView(device: device)
                 devicesStackView.addArrangedSubview(deviceView)
             }
         }
     }
     
-    private func createDeviceView(name: String) -> UIView {
+    private func createDeviceView(device: Device) -> UIView {
         let containerView = UIView()
         containerView.backgroundColor = .secondarySystemBackground
         containerView.layer.cornerRadius = 8
@@ -360,15 +368,15 @@ class ViewController: UIViewController {
         stackView.translatesAutoresizingMaskIntoConstraints = false
         
         let iconLabel = UILabel()
-        iconLabel.text = "📺"
+        iconLabel.text = device.emoji
         iconLabel.font = UIFont.systemFont(ofSize: 24)
         
         let nameLabel = UILabel()
-        nameLabel.text = name
+        nameLabel.text = device.name
         nameLabel.font = UIFont.boldSystemFont(ofSize: 16)
         
         let statusIndicator = UIView()
-        statusIndicator.backgroundColor = .systemGreen
+        statusIndicator.backgroundColor = device.isConnected ? .systemGreen : .systemGray
         statusIndicator.layer.cornerRadius = 6
         statusIndicator.translatesAutoresizingMaskIntoConstraints = false
         
@@ -410,8 +418,17 @@ class ViewController: UIViewController {
     }
     
     private func sendSettingsToServer() {
-        // Here you would make HTTP requests to update server settings
-        print("Отправка настроек на сервер...")
+        let settings = ServerSettings(
+            sponsorBlockEnabled: sponsorBlockEnabledSwitch.isOn,
+            adBlockEnabled: adBlockEnabledSwitch.isOn,
+            autoSkipEnabled: autoSkipSwitch.isOn
+        )
+        
+        NetworkManager.shared.updateSettings(settings) { success in
+            if !success {
+                print("Не удалось обновить настройки на сервере")
+            }
+        }
     }
     
     // MARK: - Helper Methods
