@@ -48,5 +48,20 @@
     </array>
     <key>UIApplicationSupportsIndirectInputEvents</key>
     <true/>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+    </dict>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>iSponsorBlockTV нужен доступ к локальной сети для поиска и подключения к YouTube TV устройствам (Smart TV, Chromecast, Apple TV).</string>
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_googlecast._tcp</string>
+        <string>_airplay._tcp</string>
+        <string>_http._tcp</string>
+    </array>
 </dict>
 </plist>
