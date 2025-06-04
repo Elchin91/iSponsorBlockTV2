@@ -178,6 +178,7 @@ targets:
       - iSponsorBlockTV
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.elchin91.isponsorblockTV
+      PRODUCT_NAME: iSponsorBlockTV
       CODE_SIGN_STYLE: Manual
       CODE_SIGNING_REQUIRED: NO
       CODE_SIGNING_ALLOWED: NO
@@ -189,6 +190,14 @@ targets:
       CURRENT_PROJECT_VERSION: 1
       TARGETED_DEVICE_FAMILY: "1,2"
       SWIFT_VERSION: 5.0
+      ENABLE_BITCODE: NO
+      VALID_ARCHS: "arm64"
+      ARCHS: "arm64"
+      ONLY_ACTIVE_ARCH: NO
+      EXCLUDED_ARCHS[sdk=iphonesimulator*]: "arm64"
+      STRIP_SWIFT_SYMBOLS: NO
+      COPY_PHASE_STRIP: NO
+      ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES: YES
 schemes:
   iSponsorBlockTV:
     build:
