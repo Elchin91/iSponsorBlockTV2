@@ -99,7 +99,7 @@ class YouTubeTVManager: ObservableObject {
             )
             
             DispatchQueue.main.async {
-                if !self?.connectedDevices.contains(where: { $0.id == device.id }) ?? false {
+                if !(self?.connectedDevices.contains(where: { $0.id == device.id }) ?? true) {
                     self?.connectedDevices.append(device)
                 }
             }
