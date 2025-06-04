@@ -90,12 +90,17 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGN_IDENTITY="" \
-            ENTITLEMENTS_REQUIRED=YES \
-            EXPANDED_CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE="" \
+            DEVELOPMENT_TEAM="" \
+            PRODUCT_BUNDLE_IDENTIFIER="com.elchin91.isponsorblockTV" \
+            ENABLE_BITCODE=NO \
             STRIP_SWIFT_SYMBOLS=NO \
             COPY_PHASE_STRIP=NO \
             SWIFT_OPTIMIZATION_LEVEL="-O" \
-            OTHER_CODE_SIGN_FLAGS="--entitlements iSponsorBlockTV/TrollStore.entitlements" \
+            VALID_ARCHS="arm64" \
+            ARCHS="arm64" \
+            ONLY_ACTIVE_ARCH=NO \
+            ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES=YES \
             | tee build.log
             
           # Проверяем результат сборки
@@ -104,6 +109,22 @@ jobs:
             cat build.log
             exit 1
           fi
+          
+          # Проверяем что исполняемый файл создался
+          APP_PATH=$(find build/app.xcarchive/Products/Applications -name "*.app" | head -1)
+          if [ -n "$APP_PATH" ]; then
+            echo "Найдено приложение: $APP_PATH"
+            ls -la "$APP_PATH"
+            EXECUTABLE_PATH="$APP_PATH/iSponsorBlockTV"
+            if [ -f "$EXECUTABLE_PATH" ]; then
+              echo "✅ Исполняемый файл найден: $EXECUTABLE_PATH"
+              file "$EXECUTABLE_PATH"
+            else
+              echo "❌ Исполняемый файл не найден в $EXECUTABLE_PATH"
+              echo "Содержимое app bundle:"
+              ls -la "$APP_PATH"
+            fi
+          fi
             
       - name: Create IPA
         run: |
@@ -111,6 +132,11 @@ jobs:
             echo "Архив создан успешно. Создаем IPA..."
             mkdir -p Payload
             cp -r build/app.xcarchive/Products/Applications/*.app Payload/
+            
+            # Проверяем структуру перед созданием IPA
+            echo "Структура Payload:"
+            find Payload -type f | head -20
+            
             zip -r iSponsorBlockTV-TrollStore.ipa Payload
             echo "IPA создан в: iSponsorBlockTV-TrollStore.ipa"
             ls -la iSponsorBlockTV-TrollStore.ipa
