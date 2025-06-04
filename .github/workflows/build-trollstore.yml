@@ -96,7 +96,6 @@ jobs:
             ENABLE_BITCODE=NO \
             STRIP_SWIFT_SYMBOLS=NO \
             COPY_PHASE_STRIP=NO \
-            SWIFT_OPTIMIZATION_LEVEL="-O" \
             VALID_ARCHS="arm64" \
             ARCHS="arm64" \
             ONLY_ACTIVE_ARCH=NO \
