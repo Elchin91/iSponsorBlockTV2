@@ -801,6 +801,9 @@ options:
   bundleIdPrefix: com.elchin91
   deploymentTarget:
     iOS: 14.0
+configs:
+  Debug: debug
+  Release: release
 targets:
   iSponsorBlockTV:
     type: application
@@ -829,6 +832,14 @@ targets:
       STRIP_SWIFT_SYMBOLS: NO
       COPY_PHASE_STRIP: NO
       ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES: YES
+    settings:
+      configs:
+        Debug:
+          SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+          SWIFT_COMPILATION_MODE: "incremental"
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: "-O"
+          SWIFT_COMPILATION_MODE: "wholemodule"
 schemes:
   iSponsorBlockTV:
     build:
